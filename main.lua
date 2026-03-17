@@ -1,9 +1,28 @@
 -- ================================================
--- MAIN.LUA - Strongman Hub
+-- STRONGMAN HUB - ALL IN ONE
 -- by gtw9403
 -- ================================================
 
--- Load Rayfield
+-- CEK GAME
+local supportedGames = {
+    [6766156863] = "Strongman Simulator",
+}
+
+local gameName = supportedGames[game.PlaceId]
+if not gameName then
+    warn("⚠️ Game tidak didukung! PlaceId: " .. game.PlaceId)
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "Error", Text = "Game tidak didukung!", Duration = 5
+    })
+    return
+end
+
+print("🎮 Game: " .. gameName)
+print("👤 Player: " .. game.Players.LocalPlayer.Name)
+
+-- ================================================
+-- LOAD RAYFIELD
+-- ================================================
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Players    = game:GetService("Players")
@@ -17,9 +36,9 @@ local player     = Players.LocalPlayer
 _G.AutoLift    = false
 _G.AutoRebirth = false
 _G.InfJump     = false
+_G.SelectedArea = "Area1"
 
-local liftLoop    = nil
-local rebirthLoop = nil
+local liftLoop = nil
 
 -- ================================================
 -- HELPER
@@ -48,14 +67,12 @@ local function StartAutoLift()
         if not _G.AutoLift then return end
         local root = GetRoot()
         if not root then return end
-
         for _, obj in pairs(workspace:GetDescendants()) do
             if obj:IsA("BasePart") and (
                 obj.Name:lower():find("barbell") or
                 obj.Name:lower():find("weight") or
                 obj.Name:lower():find("dumbbell") or
-                obj.Name:lower():find("lift") or
-                obj.Name:lower():find("gym")
+                obj.Name:lower():find("lift")
             ) then
                 local dist = (root.Position - obj.Position).Magnitude
                 if dist < 15 then
@@ -84,7 +101,7 @@ end
 -- AUTO REBIRTH
 -- ================================================
 local function StartAutoRebirth()
-    rebirthLoop = task.spawn(function()
+    task.spawn(function()
         while _G.AutoRebirth do
             pcall(function()
                 local remotes = game:GetService("ReplicatedStorage"):FindFirstChild("Remotes")
@@ -115,6 +132,34 @@ UIS.JumpRequest:Connect(function()
 end)
 
 -- ================================================
+-- TELEPORT KE AREA
+-- ================================================
+local function TeleportToArea(areaName)
+    local areas = workspace:FindFirstChild("Areas")
+    if not areas then
+        Rayfield:Notify({ Title = "Error", Content = "Folder Areas tidak ditemukan!", Duration = 3, Image = 4483362458 })
+        return
+    end
+
+    local area = areas:FindFirstChild(areaName)
+    if not area then
+        Rayfield:Notify({ Title = "Error", Content = "Area " .. areaName .. " tidak ditemukan!", Duration = 3, Image = 4483362458 })
+        return
+    end
+
+    -- Cari SpawnLocation atau Part pertama di area
+    local spawnPart = area:FindFirstChildOfClass("SpawnLocation")
+        or area:FindFirstChildWhichIsA("BasePart")
+
+    if spawnPart then
+        TeleportTo(spawnPart.Position + Vector3.new(0, 5, 0))
+        Rayfield:Notify({ Title = "Teleport", Content = "Berhasil ke " .. areaName .. "!", Duration = 3, Image = 4483362458 })
+    else
+        Rayfield:Notify({ Title = "Error", Content = "Tidak ada spawn di area ini!", Duration = 3, Image = 4483362458 })
+    end
+end
+
+-- ================================================
 -- WINDOW
 -- ================================================
 local Window = Rayfield:CreateWindow({
@@ -123,22 +168,18 @@ local Window = Rayfield:CreateWindow({
     LoadingTitle     = "Strongman Hub",
     LoadingSubtitle  = "by gtw9403",
     Theme            = "BloodMoon",
-
     DisableRayfieldPrompts = false,
     DisableBuildWarnings   = false,
-
     ConfigurationSaving = {
         Enabled    = true,
         FolderName = "StrongmanHub",
         FileName   = "Config",
     },
-
     Discord = {
         Enabled       = false,
         Invite        = "your-discord",
         RememberJoins = true,
     },
-
     KeySystem = false,
 })
 
@@ -159,11 +200,7 @@ FarmTab:CreateToggle({
     Name = "Auto Lift", CurrentValue = false, Flag = "AutoLift",
     Callback = function(Value)
         _G.AutoLift = Value
-        if Value then
-            StartAutoLift()
-        else
-            StopAutoLift()
-        end
+        if Value then StartAutoLift() else StopAutoLift() end
         Rayfield:Notify({ Title = "Auto Lift", Content = Value and "Aktif!" or "Dimatikan.", Duration = 3, Image = 4483362458 })
     end,
 })
@@ -178,7 +215,7 @@ FarmTab:CreateToggle({
 })
 
 FarmTab:CreateSlider({
-    Name = "Farm Delay (detik)", Range = {0, 5}, Increment = 0.1,
+    Name = "Farm Delay", Range = {0, 5}, Increment = 0.1,
     Suffix = "s", CurrentValue = 0.1, Flag = "FarmDelay",
     Callback = function(Value) _G.FarmDelay = Value end,
 })
@@ -239,21 +276,48 @@ PlayerTab:CreateButton({
 -- ================================================
 -- TELEPORT TAB
 -- ================================================
-TeleportTab:CreateSection("📍 Lokasi")
+TeleportTab:CreateSection("🗺️ Area Teleport")
 
-TeleportTab:CreateButton({
-    Name = "🏠 Teleport ke Spawn",
-    Callback = function()
-        TeleportTo(Vector3.new(0, 10, 0))
-        Rayfield:Notify({ Title = "Teleport", Content = "Berhasil ke Spawn!", Duration = 3, Image = 4483362458 })
+TeleportTab:CreateDropdown({
+    Name = "Pilih Area",
+    Options = {
+        "Area1",
+        "Area10_Candyland",
+        "Area11_ScienceLab",
+        "Area12_Tropical",
+        "Area13_Dinoland",
+        "Area14_Retro",
+        "Area15_IceWorld",
+        "Area16_DeepSea",
+        "Area17_OldWest",
+        "Area18_Apartment",
+        "Area19_Treasury",
+        "Area20_Princess",
+        "Area21_Asian",
+        "Area22_Kitchen",
+        "Area23_Sewer",
+        "Area24_Mineshaft",
+        "Area25_RobotFactory",
+        "Area26_Magic",
+        "Area27_Football",
+        "Area28_Prison",
+    },
+    CurrentOption   = {"Area1"},
+    MultipleOptions = false,
+    Flag            = "SelectedArea",
+    Callback        = function(Option)
+        _G.SelectedArea = Option
     end,
 })
 
 TeleportTab:CreateButton({
-    Name = "🏋️ Teleport ke Gym",
+    Name = "🚀 Teleport ke Area",
     Callback = function()
-        TeleportTo(Vector3.new(100, 10, 200))
-        Rayfield:Notify({ Title = "Teleport", Content = "Berhasil ke Gym!", Duration = 3, Image = 4483362458 })
+        if _G.SelectedArea then
+            TeleportToArea(_G.SelectedArea)
+        else
+            Rayfield:Notify({ Title = "Error", Content = "Pilih area dulu!", Duration = 3, Image = 4483362458 })
+        end
     end,
 })
 
