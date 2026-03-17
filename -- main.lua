@@ -1,4 +1,268 @@
--- main.lua
+-- ================================================
+-- MAIN.LUA - UI Script dengan Rayfield
+-- Diload otomatis oleh loader.lua
+-- ================================================
+
+-- Load Rayfield
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+local Players    = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local player     = Players.LocalPlayer
+
+-- ================================================
+-- AUTO FARM LOOP (contoh)
+-- ================================================
+local autoFarmLoop   = nil
+local autoFarmActive = false
+
+local function StartAutoFarm()
+    autoFarmActive = true
+    autoFarmLoop = RunService.Heartbeat:Connect(function()
+        if not autoFarmActive then return end
+        -- Tulis logika auto farm kamu di sini
+        -- Contoh: klik/collect item terdekat
+    end)
+end
+
+local function StopAutoFarm()
+    autoFarmActive = false
+    if autoFarmLoop then
+        autoFarmLoop:Disconnect()
+        autoFarmLoop = nil
+    end
+end
+
+-- ================================================
+-- BUAT WINDOW
+-- ================================================
+local Window = Rayfield:CreateWindow({
+    Name             = "My Script Hub",
+    Icon             = 0,
+    LoadingTitle     = "My Script Hub",
+    LoadingSubtitle  = "by YourName",
+    Theme            = "Default",
+
+    DisableRayfieldPrompts  = false,
+    DisableBuildWarnings    = false,
+
+    ConfigurationSaving = {
+        Enabled    = true,
+        FolderName = "MyScriptHub",
+        FileName   = "Config",
+    },
+
+    Discord = {
+        Enabled      = false,
+        Invite       = "your-discord",
+        RememberJoins = true,
+    },
+
+    KeySystem = false,
+    KeySettings = {
+        Title    = "Key Required",
+        Subtitle = "Enter Key",
+        Note     = "Join discord untuk key",
+        FileName = "Key",
+        SaveKey  = true,
+        Key      = {"MyKey123"},
+    },
+})
+
+-- ================================================
+-- TAB
+-- ================================================
+local MainTab     = Window:CreateTab("⚔️ Main",     4483362458)
+local PlayerTab   = Window:CreateTab("🧍 Player",   4483362458)
+local SettingsTab = Window:CreateTab("⚙️ Settings", 4483362458)
+
+-- ================================================
+-- MAIN TAB
+-- ================================================
+MainTab:CreateSection("🌾 Farm")
+
+MainTab:CreateToggle({
+    Name         = "Auto Farm",
+    CurrentValue = false,
+    Flag         = "AutoFarm",
+    Callback     = function(Value)
+        if Value then
+            StartAutoFarm()
+            Rayfield:Notify({ Title = "Auto Farm", Content = "Auto Farm aktif!", Duration = 3, Image = 4483362458 })
+        else
+            StopAutoFarm()
+            Rayfield:Notify({ Title = "Auto Farm", Content = "Auto Farm dimatikan.", Duration = 3, Image = 4483362458 })
+        end
+    end,
+})
+
+MainTab:CreateButton({
+    Name     = "Collect Semua Item",
+    Callback = function()
+        -- Tulis logika collect di sini
+        Rayfield:Notify({ Title = "Collect", Content = "Mengumpulkan item...", Duration = 3, Image = 4483362458 })
+    end,
+})
+
+MainTab:CreateSection("📍 Teleport")
+
+MainTab:CreateButton({
+    Name     = "Teleport ke Spawn",
+    Callback = function()
+        local char = player.Character
+        if char then
+            char:MoveTo(Vector3.new(0, 10, 0))
+            Rayfield:Notify({ Title = "Teleport", Content = "Berhasil teleport ke Spawn!", Duration = 3, Image = 4483362458 })
+        end
+    end,
+})
+
+MainTab:CreateButton({
+    Name     = "Teleport ke Gym",
+    Callback = function()
+        -- Ganti koordinat sesuai map game
+        local char = player.Character
+        if char then
+            char:MoveTo(Vector3.new(100, 10, 200))
+            Rayfield:Notify({ Title = "Teleport", Content = "Berhasil teleport ke Gym!", Duration = 3, Image = 4483362458 })
+        end
+    end,
+})
+
+-- ================================================
+-- PLAYER TAB
+-- ================================================
+PlayerTab:CreateSection("🏃 Movement")
+
+PlayerTab:CreateSlider({
+    Name         = "Walk Speed",
+    Range        = {16, 300},
+    Increment    = 1,
+    Suffix       = " Speed",
+    CurrentValue = 16,
+    Flag         = "WalkSpeed",
+    Callback     = function(Value)
+        local char = player.Character
+        if char and char:FindFirstChild("Humanoid") then
+            char.Humanoid.WalkSpeed = Value
+        end
+    end,
+})
+
+PlayerTab:CreateSlider({
+    Name         = "Jump Power",
+    Range        = {50, 500},
+    Increment    = 5,
+    Suffix       = " Power",
+    CurrentValue = 50,
+    Flag         = "JumpPower",
+    Callback     = function(Value)
+        local char = player.Character
+        if char and char:FindFirstChild("Humanoid") then
+            char.Humanoid.JumpPower = Value
+        end
+    end,
+})
+
+PlayerTab:CreateSection("🛡️ Combat")
+
+PlayerTab:CreateToggle({
+    Name         = "God Mode",
+    CurrentValue = false,
+    Flag         = "GodMode",
+    Callback     = function(Value)
+        local char = player.Character
+        if char and char:FindFirstChild("Humanoid") then
+            if Value then
+                char.Humanoid.MaxHealth = math.huge
+                char.Humanoid.Health    = math.huge
+            else
+                char.Humanoid.MaxHealth = 100
+                char.Humanoid.Health    = 100
+            end
+        end
+    end,
+})
+
+PlayerTab:CreateToggle({
+    Name         = "Infinite Jump",
+    CurrentValue = false,
+    Flag         = "InfJump",
+    Callback     = function(Value)
+        _G.InfJump = Value
+    end,
+})
+
+-- Infinite Jump handler
+game:GetService("UserInputService").JumpRequest:Connect(function()
+    if _G.InfJump then
+        local char = player.Character
+        if char and char:FindFirstChild("Humanoid") then
+            char.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+        end
+    end
+end)
+
+-- ================================================
+-- SETTINGS TAB
+-- ================================================
+SettingsTab:CreateSection("🎨 UI Settings")
+
+SettingsTab:CreateKeybind({
+    Name            = "Toggle UI",
+    CurrentKeybind  = "RightShift",
+    HoldToInteract  = false,
+    Flag            = "ToggleUI",
+    Callback        = function()
+        -- Rayfield handle sendiri via RightShift
+    end,
+})
+
+SettingsTab:CreateDropdown({
+    Name            = "Theme",
+    Options         = {"Default", "AmberGlow", "Amethyst", "BloodMoon", "Carbon", "Ocean"},
+    CurrentOption   = {"Default"},
+    MultipleOptions = false,
+    Flag            = "Theme",
+    Callback        = function(Option)
+        Rayfield:Notify({ Title = "Theme", Content = "Restart script untuk apply theme: " .. Option, Duration = 4, Image = 4483362458 })
+    end,
+})
+
+SettingsTab:CreateSection("ℹ️ Info")
+
+SettingsTab:CreateButton({
+    Name     = "Script Info",
+    Callback = function()
+        Rayfield:Notify({
+            Title   = "My Script Hub v1.0",
+            Content = "By YourName | Strongman Simulator",
+            Duration = 5,
+            Image   = 4483362458,
+        })
+    end,
+})
+
+-- ================================================
+-- NOTIF WELCOME
+-- ================================================
+Rayfield:Notify({
+    Title   = "✅ Script Loaded!",
+    Content = "My Script Hub berhasil diload! Selamat bermain.",
+    Duration = 5,
+    Image   = 4483362458,
+})
+```
+
+---
+
+## 🚀 Cara Pakai
+
+**Struktur repo GitHub:**
+```
+YOUR_REPO/
+├── loader.lua
+└── main.lua-- main.lua
 -- Strongman Simulator Script by skyzoxle
 
 --[[
